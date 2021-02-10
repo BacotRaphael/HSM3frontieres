@@ -1,0 +1,13 @@
+{
+    "dialog-state": {
+        "query": "read.table",
+        "path": "C:/Users/Admin/Desktop/Hedi/github/HSM3frontieres",
+        "regex": false,
+        "caseSensitive": false,
+        "filePatterns": [],
+        "excludeFilePatterns": [],
+        "resultsCount": 0,
+        "errorCount": 0,
+        "replaceErrors": ""
+    }
+}
