@@ -5,12 +5,14 @@ ui <- shiny::fluidPage(
     shiny::sidebarLayout(
         shiny::sidebarPanel(
             shiny::selectizeInput(
-                'operation', "Quelle type d'operation voulez vous effectuer:", choices = setNames(c("clog","clean"),c("Produire un Cleaning Log","Nettoyer les donnees")),
+                'operation', "Quelle type d'operation voulez vous effectuer:", choices = setNames(c("clog","clean"),c("Produire un Cleaning Log","Nettoyer des donnees")),
                 options = list(
                     placeholder = 'Veuillez choisir une des options suivantes',
                     onInitialize = I('function() { this.setValue(""); }')
                 )
             ),
+            shiny::tags$hr(),
+            shiny::uiOutput("ui.cloglabel"),
             shiny::tags$hr(),
             shiny::uiOutput("ui.db"),
             shiny::tags$hr(),
@@ -18,14 +20,16 @@ ui <- shiny::fluidPage(
             shiny::tags$hr(),
             shiny::uiOutput("ui.clog"),
             shiny::tags$hr(),
-            shiny::uiOutput("ui.run.check"),
+            shiny::actionButton("runchecks","RUN checks"),
+            shiny::actionButton("runclean","CLEAN data"),
             shiny::tags$hr(),
             shiny::downloadButton("dwoutput"),
+            # shiny::downloadButton("dwclean"),
             shiny::helpText("Download will be available once the processing is completed.")
             )
         ,
         shiny::mainPanel(
-            shiny::dataTableOutput("preview"))
+        )
     )
 )
 
@@ -40,6 +44,9 @@ server <- function(input, output, session) {
     library(stringr)
     library(shinyjs)
     shinyjs::disable("dwoutput")
+    # shinyjs::disable("dwclean")
+    shinyjs::disable("runchecks")
+    shinyjs::disable("runclean")
     output$ui.db<-renderUI({
         if(input$operation%!in%c(NULL,"")){
             shiny::fileInput("db", "DATASET/ DONNEES (.csv or .xlsx)", accept = c(".csv",".xlsx",".xls"))
@@ -53,6 +60,17 @@ server <- function(input, output, session) {
     output$ui.clog<-renderUI({
         if(input$operation=="clean"){
             shiny::fileInput("clog", "Cleaning LOG", accept = c(".csv",".xlsx",".xls"))
+        }
+    })
+    output$ui.cloglabel<-renderUI({
+        if(input$operation=="clog"){
+            shiny::selectizeInput(
+                'cloglabel', "Voulez vous labeliser les questions/reponses dans le cleaning log", choices = setNames(c("non","oui"),c("Non","Oui")),
+                options = list(
+                    placeholder = 'Veuillez choisir une des options suivantes',
+                    onInitialize = I('function() { this.setValue(""); }')
+                )
+            )
         }
     })
     db <- shiny::reactive({
@@ -71,35 +89,77 @@ server <- function(input, output, session) {
         shiny::req(input$clog)
         load_file(input$clog$name,input$clog$datapath)
     })
-    output$ui.run.check<-renderUI({
-        if(!is.null(db())&!is.null(survey())&!is.null(choices())&input$operation=="clog") actionButton("runchecks","RUN checks")
+    observe({
+        if(!is.null(db())&!is.null(survey())&!is.null(choices())&input$operation=="clog"&&input$cloglabel!=""){
+            enable("runchecks")
+        } else {disable("runchecks")}
     })
-    check<-shiny::eventReactive(input$runchecks, {
-
+    observe({
+        if(!is.null(db())&!is.null(survey())&!is.null(choices())&!is.null(clog())&input$operation=="clean"){
+            enable("runclean")
+        } else {disable("runclean")}
+    })
+    check<-reactive({
+        shinyjs::disable("dwoutput")
         time_check<-survey_tonext_check(db())
         autre_check<-other_check(db(),survey())
         logbook<-apply_checks(db())
-
         clog<-bind_rows(logbook,time_check,autre_check)
+        if(input$cloglabel=="oui"){clog<-label_clog(clog,survey(),choices())}
         shinyjs::enable("dwoutput")
-        shinyjs::html("dwoutput", "Download output")
+        shinyjs::html("dwoutput", "Download Cleaning LOG")
         clog
+        
+    })
+    forout_clog <- reactiveValues()
+    observeEvent(input$runchecks, {
+        x<-check()
+        forout_clog$x=x
+    })
+    clean<-reactive({
+        shinyjs::disable("dwoutput")
+        db<-db()[which(!is.na(db()$uuid)),]
+        db<- cleaning_data(db(),clog(),survey(),choices())
+        shinyjs::enable("dwoutput")
+        shinyjs::html("dwoutput", "Download Clean data")
+        db
 
     })
-    output$preview <- shiny::renderDataTable({
-        check()
+    forout_clean <- reactiveValues()
+    observeEvent(input$runclean, {
+        x<-clean()
+        forout_clean$x=x
     })
     output$dwoutput <- shiny::downloadHandler(
         filename = function() {
-            paste0("cleaninglog-",humanTime(),".csv")
+            if(input$operation=="clog"&input$cloglabel=="non"){
+                paste0("cleaninglog-",humanTime(),".csv")
+            }else if(input$operation=="clog"&input$cloglabel=="oui"){
+                paste0("labeled-cleaninglog-",humanTime(),".csv")
+            }else{paste0("cleandata-",humanTime(),".csv")}
         },
         content = function(file) {
-            write.csv(check(), file, row.names = FALSE)
+            if(input$operation=="clog"){
+                xout<-forout_clog$x
+                write.csv(xout, file, row.names = FALSE)
+            } else {
+                xout<-forout_clean$x
+                write.csv(xout, file, row.names = FALSE)
+            }
         }
     )
+    # output$dwclean <- shiny::downloadHandler(
+    #     filename = function() {
+    #         paste0("cleandata-",humanTime(),".csv")
+    #     },
+    #     content = function(file) {
+    #         xout<-forout_clean$x
+    #         write.csv(clean(), file, row.names = FALSE)
+    #     }
+    # )
 }
 
 H2R_HSM<-function(...){
-    options(shiny.maxRequestSize = 60 * 1024^2)
+    options(shiny.maxRequestSize =200 * 1024^2)
     shiny::shinyApp(ui, server,...)
 }

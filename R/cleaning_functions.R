@@ -121,7 +121,8 @@ other_check<-function(dbs,survey){
     question.name = c(),
     old.value = c(),
     new.value = c(),
-    if.other.text.entry = c(),
+    parent.other.question = c(),
+    parent.other.answer=c(),
     other.text.var = c(),
     probleme = c(),
     checkid= c(),
@@ -147,7 +148,8 @@ other_check<-function(dbs,survey){
         uuid=dbs[["uuid"]][indexoth],
         question.name=rep(names(dbs)[k],length(indexoth)),
         old.value=dbs[indexoth,k],
-        if.other.text.entry=rep(oth_qname,length(indexoth)),
+        parent.other.question=rep(oth_qname,length(indexoth)),
+        parent.other.answer=dbs[[oth_qname]][indexoth],
         other.text.var=rep("NULL",length(indexoth)),
         probleme=rep("others: to check if could be recoded",length(indexoth)),
         action="check",
@@ -216,7 +218,7 @@ impl_clean<-function(data,uuid,dclean,uuid_log,qmname,newval,oldval,action,other
 }
 
 cleaning_data <- function(db, clog, questions, choices){
-  clean<-db %>% impl_clean("uuid",clog,"uuid","question.name","new.value","old.value","action","if.other.text.entry","other.text.var")
+  clean<-db %>% impl_clean("uuid",clog,"uuid","question.name","new.value","old.value","action","parent.other.question","other.text.var")
   clean<- rec_missing_all(clean)
   clean<-clean %>% type_convert()
   clean<-clean %>% split_multiple_choice(questions,choices)

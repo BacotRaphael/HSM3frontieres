@@ -23,26 +23,24 @@ prepdata<-function(data){data %>% cleanheaders %>% rec_missing_all %>% remove_bl
 ch<-as.character
 chr<-as.character
 
-label_clog<- function(clog,pathtosurvey,survey_label_col="label",choices_label_col="label"){
+label_clog<- function(clog,survey,choices){
   
-  questionnaire<-read_excel(pathtosurvey,"survey")
-  choices<-read_excel(pathtosurvey,"choices")
-  question.name_label <- match(clog[["question.name"]], questionnaire[["name"]])
+  names(choices)<-gsub(":.*","",names(choices))
+  names(survey)<-gsub(":.*","",names(survey))
+  choices_label <- choices[["label"]]
+  survey_label <- survey[["label"]]
+  question.name_label <- match(clog[["question.name"]], survey[["name"]])
   old.value_label <- match(clog[["old.value"]], choices[["name"]])
-  new.value_label <- match(clog[["new.value"]], choices[["name"]])
-  if.other.text.entry_label <- match(clog[["if.other.text.entry"]], questionnaire[["name"]])
+  parent.other.question_label <- match(clog[["parent.other.question"]], survey[["name"]])
   other.text.var_label <- match(clog[["other.text.var"]], choices[["name"]])
-  choice_labels <- choices[[choices_label_col]]
-  question_labels <- questionnaire[[survey_label_col]]
   
   labeled_clog <- clog %>%
-    mutate(question.name_label = ifelse(is.na(question.name_label),question.name,question_labels[question.name_label]),
-           old.value_label = ifelse(is.na(old.value_label),old.value,choice_labels[old.value_label]),
-           new.value_label = ifelse(is.na(new.value_label),new.value,choice_labels[new.value_label]),
-           if.other.text.entry_label = ifelse(is.na(if.other.text.entry_label),if.other.text.entry,question_labels[if.other.text.entry_label]),
-           other.text.var_label = ifelse(is.na(other.text.var_label),other.text.var,choice_labels[other.text.var_label]))
+    mutate(question.name_label = ifelse(is.na(question.name_label),question.name,survey_label[question.name_label]),
+           old.value_label = ifelse(is.na(old.value_label),old.value,choices_label[old.value_label]),
+           parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label]),
+           other.text.var_label = ifelse(is.na(other.text.var_label),other.text.var,choices_label[other.text.var_label]))
   
-  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","new.value_label","if.other.text.entry","if.other.text.entry_label","other.text.var","other.text.var_label")
+  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","parent.other.question","parent.other.question_label","parent.other.answer","other.text.var","other.text.var_label")
   labeled_clog<-labeled_clog %>% select(all_of(vars),everything())
   
   return(labeled_clog)
@@ -60,7 +58,7 @@ load_file <- function(name, path) {
 
 pulluuid<-function(data,logiquetest){data$uuid[which(logiquetest)]}
 
-makeslog<-function(data,logbook,checkid="empty",index,question.name,explanation,if.other.text.entry="NULL",new.value="NULL",action="check"){
+makeslog<-function(data,logbook,checkid="empty",index,question.name,explanation,parent.other.question="NULL",parent.other.answer="NULL",new.value="NULL",action="check"){
   if(length(index)>0){
     if(question.name=="all"){oldval<-"-"}else{oldval<-as.character(data[[question.name]][data$uuid%in%index])}
     newlog<-data.frame(
@@ -72,7 +70,8 @@ makeslog<-function(data,logbook,checkid="empty",index,question.name,explanation,
       old.value=oldval,
       new.value=new.value,
       probleme = explanation,
-      if.other.text.entry=ifelse(if.other.text.entry=="NULL","NULL",as.character(data[[if.other.text.entry]][data$uuid%in%index])),
+      parent.other.question=ifelse(parent.other.question=="NULL","NULL",as.character(data[[parent.other.question]][data$uuid%in%index])),
+      parent.other.answer=ifelse(parent.other.answer=="NULL","NULL",as.character(data[[parent.other.answer]][data$uuid%in%index])),
       checkid= checkid,
       action=action)
     bind_rows(logbook,newlog)

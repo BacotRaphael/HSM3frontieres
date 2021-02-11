@@ -7,7 +7,8 @@ apply_checks<-function(db){
     question.name = character(),
     old.value = character(),
     new.value = character(),
-    if.other.text.entry = character(),
+    parent.other.question = character(),
+    parent.other.answer = character(),
     other.text.var = character(),
     probleme = character(),
     checkid= character(),
@@ -66,7 +67,7 @@ logbook<-makeslog(data,logbook,"id11",index,"abris_destruction_raison","S'agit-i
 
 temp<-data %>% group_by(deviceid) %>% summarise(n=n_distinct(global_enum_id)) %>% mutate(check=n>1)
 index<-pulluuid(data, data$deviceid%in% temp$deviceid[which(temp$check==T)])
-logbook<-makeslog(data,logbook,"id12",index,"global_enum_id","Meme identifiant de smartephone mais differents numeros d'enqueteurs","deviceid")
+logbook<-makeslog(data,logbook,"id12",index,"global_enum_id","Meme identifiant de smartephone mais differents numeros d'enqueteurs")
 
 index<-pulluuid(data, data$ic_age>50&data$profession_ic=="etudiant")
 logbook<-makeslog(data,logbook,"id13",index,"ic_age","Un informateur cle qui a plus de 50 avec comme profil etudiant")
