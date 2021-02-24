@@ -1,6 +1,6 @@
 {
     "dialog-state": {
-        "query": "read.table",
+        "query": "sl_correction",
         "path": "C:/Users/Admin/Desktop/Hedi/github/HSM3frontieres",
         "regex": false,
         "caseSensitive": false,

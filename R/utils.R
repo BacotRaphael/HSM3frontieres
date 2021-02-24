@@ -9,16 +9,25 @@ humanTime <- function() {
   format(Sys.time(), "%Y%m%d-%H%M%OS")
 }
 
-rec_missing<-function(x,missings=c(NULL,'NULL','N/A','n/a',999,998,888,' ','(vide)','d/m','','NA','na')) {
+rec_missing<-function(x,missings=c(NULL,'NULL','N/A','n/a',999,998,888,' ','(vide)','d/m','','NA','na',""," ")) {
   x[x %in% missings] <- NA
   return(x)
 }
 
 rec_missing_all<-function(data){lapply(data,rec_missing) %>% bind_cols}
 
-cleanheaders<-function(data){names(data)<-gsub("^X_","",names(data));names(data)<-gsub("^_","",names(data));names(data)<-gsub("\\/",".",names(data));return(data)}
+cleanheaders<-function(data,slashtodot){
+  if(slashtodot){
+    names(data)<-gsub("^X_","",names(data))
+    names(data)<-gsub("^_","",names(data))
+    names(data)<-gsub("\\/",".",names(data)) 
+  } else {
+    names(data)<-gsub("^X_","",names(data))
+    names(data)<-gsub("^_","",names(data))
+  }
+  return(data)}
 
-prepdata<-function(data){data %>% cleanheaders %>% rec_missing_all %>% remove_blank_headings %>% type_convert}
+prepdata<-function(data,slashtodot){data %>% cleanheaders(.,slashtodot) %>% rec_missing_all %>% remove_blank_headings %>% type_convert}
 
 ch<-as.character
 chr<-as.character
@@ -32,15 +41,14 @@ label_clog<- function(clog,survey,choices){
   question.name_label <- match(clog[["question.name"]], survey[["name"]])
   old.value_label <- match(clog[["old.value"]], choices[["name"]])
   parent.other.question_label <- match(clog[["parent.other.question"]], survey[["name"]])
-  other.text.var_label <- match(clog[["other.text.var"]], choices[["name"]])
   
   labeled_clog <- clog %>%
     mutate(question.name_label = ifelse(is.na(question.name_label),question.name,survey_label[question.name_label]),
            old.value_label = ifelse(is.na(old.value_label),old.value,choices_label[old.value_label]),
-           parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label]),
-           other.text.var_label = ifelse(is.na(other.text.var_label),other.text.var,choices_label[other.text.var_label]))
+           parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label])
+           )
   
-  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","parent.other.question","parent.other.question_label","parent.other.answer","other.text.var","other.text.var_label")
+  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","parent.other.question","parent.other.question_label","parent.other.answer")
   labeled_clog<-labeled_clog %>% select(all_of(vars),everything())
   
   return(labeled_clog)
@@ -58,24 +66,21 @@ load_file <- function(name, path) {
 
 pulluuid<-function(data,logiquetest){data$uuid[which(logiquetest)]}
 
-makeslog<-function(data,logbook,checkid="empty",index,question.name,explanation,parent.other.question="NULL",parent.other.answer="NULL",new.value="NULL",action="check"){
-  if(length(index)>0){
-    if(question.name=="all"){oldval<-"-"}else{oldval<-as.character(data[[question.name]][data$uuid%in%index])}
-    newlog<-data.frame(
-      today=as.character(data$today[data$uuid%in%index]),
-      base=data$base[data$uuid%in%index],
-      enumerator=data$global_enum_id[data$uuid%in%index],
-      uuid= index,
-      question.name = question.name,
-      old.value=oldval,
-      new.value=new.value,
-      probleme = explanation,
-      parent.other.question=ifelse(parent.other.question=="NULL","NULL",as.character(data[[parent.other.question]][data$uuid%in%index])),
-      parent.other.answer=ifelse(parent.other.answer=="NULL","NULL",as.character(data[[parent.other.answer]][data$uuid%in%index])),
-      checkid= checkid,
-      action=action)
-    bind_rows(logbook,newlog)
-  } else{
-    logbook
-  }
+clean <- function(x) {
+  x <- tolower(x)
+  x <- gsub("  "," ",x)
+  x <- gsub("  "," ",x)
+  #supprime l'espace en debut
+  Nettoyage <- x[substr(x, 0, 1)==" "]
+  x <- replace(x,substr(x, 0, 1)==" ",substr(Nettoyage, 2, nchar(Nettoyage)))
+  #supprime l'espace en fin
+  Nettoyage <- x[substr(x, nchar(x), nchar(x)+1)==" "]
+  x <- replace(x,substr(x, nchar(x), nchar(x)+1)==" ", substr(Nettoyage, 1, nchar(Nettoyage)-1))
+  # x <- gsub("?|?|?","a",x)
+  # x <- gsub("?|?|?|?","e",x)
+  # x <- gsub("?|?","i",x)
+  # x <- gsub("?|?","o",x)
+  # x <- gsub("?|?|?","u",x)
+  # x <- gsub(" |-|'","_",x)
+  return (x)
 }

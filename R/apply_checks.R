@@ -1,4 +1,4 @@
-apply_checks<-function(db){
+apply_checks<-function(db, pays){
   logbook<-data.frame(
     today=character(),
     base= character(),
@@ -9,7 +9,6 @@ apply_checks<-function(db){
     new.value = character(),
     parent.other.question = character(),
     parent.other.answer = character(),
-    other.text.var = character(),
     probleme = character(),
     checkid= character(),
     action=character()
@@ -40,7 +39,7 @@ logbook<- makeslog(data,logbook,"id04",index, "nb_autre", "Nombre important de r
 
 # consentement suppression
 index<-pulluuid(data,data$consensus_note=="non")
-logbook<- makeslog(data,logbook,"id05",index,"consensus_note","pas de consentement pour enquete",new.value = "remove")
+logbook<- makeslog(data,logbook,"id05",index,"consensus_note","pas de consentement pour enquete",action = "remove")
 
 ##duree d'enquete ne depasse pas quinze minte
 index<-pulluuid(data,data$difftime< 20)
@@ -72,8 +71,8 @@ logbook<-makeslog(data,logbook,"id12",index,"global_enum_id","Meme identifiant d
 index<-pulluuid(data, data$ic_age>50&data$profession_ic=="etudiant")
 logbook<-makeslog(data,logbook,"id13",index,"ic_age","Un informateur cle qui a plus de 50 avec comme profil etudiant")
 
-index<-pulluuid(data, composr::sm_selected(data$groupes_presents,any = c("refugie"))&data$refugies_source_admin0=="niger")
-logbook<-makeslog(data,logbook,"id14",index,"groupes_presents","Pays d'origine des réfugiés Niger")
+index<-pulluuid(data, composr::sm_selected(data$groupes_presents,any = c("refugie"))&data$refugies_source_admin0==pays)
+logbook<-makeslog(data,logbook,"id14",index,"groupes_presents",paste0("Pays d'origine des réfugiés ",pays))
 
 index<-pulluuid(data, composr::sm_selected(data$groupes_presents,none = c("non_deplaces","retourne","rapatrie")))
 logbook<-makeslog(data,logbook,"id15",index,"groupes_presents","Groupe de population present dans la localite uniquement PDI et / ou Réfugie")
@@ -125,6 +124,40 @@ logbook<-makeslog(data,logbook,"id24",index,"reseau_mobile","Reponse pas_reseau_
 
 index<-pulluuid(data, data$source_eau=="robinet_maison"&data$eau_maintenant_distance!="moins_30_min")
 logbook<-makeslog(data,logbook,"id24",index,"eau_maintenant_distance","Source eau est robinet de la maison mais la distance a la source d'eau est > 30min")
+
+# duplicated uuid
+index<-pulluuid(data,duplicated(data$uuid))
+logbook<- makeslog(data,logbook,"id25",index,"uuid","UUID doublons")
+
+index<-pulluuid(data,data$assistance=="non"&data$nourriture_source=="ong")
+logbook<- makeslog(data,logbook,"id26",index,"assistance","L'IC a signale la presence d'une assistance alimentaire dans la localite dans la question nourriture_source")
+
+index<-pulluuid(data,data$nourriture_maintenant=="oui"&data$nourriture_source=="ong")
+logbook<- makeslog(data,logbook,"id27",index,"nourriture_source","La source de nourriture est Aide humanitaire/aide alimentaire gouvernementale alors qu'il a dit que les gens ont suffisamment à manger")
+
+index<-pulluuid(data,data$sante_maintenant=="oui"&data$nutri=="non")
+logbook<- makeslog(data,logbook,"id28",index,"nutri","Présence de services de santé accessibles mais pas de Programmes nutritionnels mis en oeuvre")
+
+index<-pulluuid(data,data$distr_nourriture=="oui"&data$assistance=="non")
+logbook<- makeslog(data,logbook,"id29",index,"assistance","une partie de la population n'a pas reçu une assistance humanitaire ? alors que Au cours des 30 derniers jours, y a des personnes qui ont reçu une assistance alimentaire")
+
+index<-pulluuid(data,data$nourriture_source=="ong"&composr::sm_selected(data$pas_nourriture_raison,any = c("distrib_arretes")))
+logbook<- makeslog(data,logbook,"id30",index,"pas_nourriture_raison","Dons humanitaires / de l'Etat comme principale source de nourriture alors que Les distributions alimentaires n'ont plus lieu")
+
+index<-pulluuid(data,data$pdi_pourcent=="tous"|data$retournes_pourcent=="tous"|data$refugies_pourcent=="tous"|data$rapatries_pourcent=="tous"&composr::sm_selected(data$groupes_presents,none = c("non_deplaces")))
+logbook<- makeslog(data,logbook,"id31",index,"groupes_presents","Proportion des PDIs ou Retournés ou Réfugiées est 'Tous/Toutes' or il doit y avoir la population locale")
+
+index<-pulluuid(data,composr::sm_selected(data$groupes_presents,none = c("non_deplaces")))
+logbook<- makeslog(data,logbook,"id32",index,"groupes_presents","group de population 'non_deplace' n'est pas present dans cette localité")
+
+index<-pulluuid(data,data$info_source=="radio"&data$info_source_qui%!in%c("journaliste","chef_communautaire","chef_religieux","autorite_locale"))
+logbook<- makeslog(data,logbook,"id33",index,"info_source","Le canal d'information est 'Station de radio' mais les fournisseurs d'information sont canaux d'information directs")
+
+index<-pulluuid(data,data$moyens_existence_obstacle=="non"&data$moyens_existence_obstacle_raison=="insecurite"&data$prot_maintenant=="oui")
+logbook<- makeslog(data,logbook,"id34",index,"prot_maintenant","ous aviez mentionné que les gens n'ont pas accès à leur moyen d'existence pour raison d'insécurité et vous ajouté qu'ils se sont sentis en sécurité")
+
+index<-pulluuid(data,composr::sm_selected(data$revenu_source,any = c("dons_humanitaire"))&data$distr_nourriture=="non")
+logbook<- makeslog(data,logbook,"id35",index,"revenu_source","Source de revenu Dons humanitaires / de l'Etat alors qu'il n y a pas eu d'assistance humanitaire dans la localité")
 
 return(logbook)
 }

@@ -123,7 +123,6 @@ other_check<-function(dbs,survey){
     new.value = c(),
     parent.other.question = c(),
     parent.other.answer=c(),
-    other.text.var = c(),
     probleme = c(),
     checkid= c(),
     action=c(),
@@ -150,7 +149,6 @@ other_check<-function(dbs,survey){
         old.value=dbs[indexoth,k],
         parent.other.question=rep(oth_qname,length(indexoth)),
         parent.other.answer=dbs[[oth_qname]][indexoth],
-        other.text.var=rep("NULL",length(indexoth)),
         probleme=rep("others: to check if could be recoded",length(indexoth)),
         action="check",
         checkid="others"
@@ -163,7 +161,7 @@ other_check<-function(dbs,survey){
   return(outother)
 }
 
-impl_clean<-function(data,uuid,dclean,uuid_log,qmname,newval,oldval,action,othermain,othertextvar){
+impl_clean<-function(data,uuid,dclean,uuid_log,qmname,newval,oldval,action,othermain){
   for (k in 1:nrow(dclean))
   {
     Taction<-dclean[[action]][k]
@@ -174,29 +172,29 @@ impl_clean<-function(data,uuid,dclean,uuid_log,qmname,newval,oldval,action,other
           data<-data[which(!data[[uuid]]%in%dclean[[uuid_log]][k]),]
         } else if(Taction=="recode_all"){
           data[[dclean[[qmname]][k]]][data[[dclean[[qmname]][k]]]==dclean[[oldval]][k]]<-dclean[[newval]][k]
-        } else if(Taction=="recode" ){
+        } else if(Taction=="recode"){
           X<-as.character(dclean[[uuid_log]][k])
           Y<-as.character(dclean[[othermain]][k])
-          val<-dclean[[othertextvar]][k]
+          val<-dclean[[newval]][k]
           data[[Y]]<-as.character(data[[Y]])
           # data[which(data[[uuid]]==X),which(names(data)==Y)]<-as.character(val)
           data[[Y]][which(data[[uuid]]==X)]<-as.character(val)
           
-        } else if(Taction=="recode_sm"){
-          X<-as.character(dclean[[uuid_log]][k])
-          Y<-as.character(dclean[[othermain]][k])
-          val<-dclean[[othertextvar]][k]
-          data[[Y]]<-as.character(data[[Y]])
-          data[which(data[[uuid]]==X),which(names(data)==Y)]<-gsub("autre",as.character(val),data[which(data[[uuid]]==X),which(names(data)==Y)])
-        } else if(Taction=="append_sm"){
-          X<-as.character(dclean[[uuid_log]][k])
-          Y<-as.character(dclean[[othermain]][k])
-          val<-dclean[[othertextvar]][k]
-          if(data[which(data[[uuid]]==X),which(names(data)==Y)]=="NA"|is.na(data[which(data[[uuid]]==X),which(names(data)==Y)])){
-            data[which(data[[uuid]]==X),which(names(data)==Y)]<-as.character(val)
-          } else {
-            data[which(data[[uuid]]==X),which(names(data)==Y)]<-paste0(data[which(data[[uuid]]==X),which(names(data)==Y)]," ",as.character(val))
-          }
+        # } else if(Taction=="recode_sm"){
+        #   X<-as.character(dclean[[uuid_log]][k])
+        #   Y<-as.character(dclean[[othermain]][k])
+        #   val<-dclean[[othertextvar]][k]
+        #   data[[Y]]<-as.character(data[[Y]])
+        #   data[which(data[[uuid]]==X),which(names(data)==Y)]<-gsub("autre",as.character(val),data[which(data[[uuid]]==X),which(names(data)==Y)])
+        # } else if(Taction=="append_sm"){
+        #   X<-as.character(dclean[[uuid_log]][k])
+        #   Y<-as.character(dclean[[othermain]][k])
+        #   val<-dclean[[othertextvar]][k]
+        #   if(data[which(data[[uuid]]==X),which(names(data)==Y)]=="NA"|is.na(data[which(data[[uuid]]==X),which(names(data)==Y)])){
+        #     data[which(data[[uuid]]==X),which(names(data)==Y)]<-as.character(val)
+        #   } else {
+        #     data[which(data[[uuid]]==X),which(names(data)==Y)]<-paste0(data[which(data[[uuid]]==X),which(names(data)==Y)]," ",as.character(val))
+        #   }
         } else if(Taction=="change") {
           X<-as.character(dclean[[uuid_log]][k])
           Y<-as.character(dclean[[qmname]][k])
@@ -218,10 +216,32 @@ impl_clean<-function(data,uuid,dclean,uuid_log,qmname,newval,oldval,action,other
 }
 
 cleaning_data <- function(db, clog, questions, choices){
-  clean<-db %>% impl_clean("uuid",clog,"uuid","question.name","new.value","old.value","action","parent.other.question","other.text.var")
+  clean<-db %>% impl_clean("uuid",clog,"uuid","question.name","new.value","old.value","action","parent.other.question")
   clean<- rec_missing_all(clean)
   clean<-clean %>% type_convert()
   clean<-clean %>% split_multiple_choice(questions,choices)
   return(clean)
   
+}
+
+makeslog<-function(data,logbook,checkid="empty",index,question.name,explanation,parent.other.question="NULL",parent.other.answer="NULL",new.value="NULL",action="check"){
+  if(length(index)>0){
+    if(question.name=="all"){oldval<-"-"}else{oldval<-as.character(data[[question.name]][data$uuid%in%index])}
+    newlog<-data.frame(
+      today=as.character(data$today[data$uuid%in%index]),
+      base=data$base[data$uuid%in%index],
+      enumerator=data$global_enum_id[data$uuid%in%index],
+      uuid= index,
+      question.name = question.name,
+      old.value=oldval,
+      new.value=new.value,
+      probleme = explanation,
+      parent.other.question=ifelse(parent.other.question=="NULL","NULL",as.character(data[[parent.other.question]][data$uuid%in%index])),
+      parent.other.answer=ifelse(parent.other.answer=="NULL","NULL",as.character(data[[parent.other.answer]][data$uuid%in%index])),
+      checkid= checkid,
+      action=action)
+    bind_rows(logbook,newlog)
+  } else{
+    logbook
+  }
 }

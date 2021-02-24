@@ -4,8 +4,7 @@ username:
 account: hedi-benmustapha
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 3611108
-bundleId: 4207419
+appId: 3627196
+bundleId: 4231014
 url: https://hedi-benmustapha.shinyapps.io/hsm3frontieres/
-when: 1612992048.40091
-lastSyncTime: 1612992048.40091
+when: 1613497948.03986

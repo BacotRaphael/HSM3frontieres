@@ -1,0 +1,22 @@
+body{
+  font-family: "arial Narrow"
+}
+
+p{
+  font-size: 18px	
+}
+
+#loadmessage {
+               position: fixed;
+               top: 0px;
+               left: 0px;
+               width: 100%;
+               padding: 5px 0px 5px 0px;
+               text-align: center;
+               font-weight: bold;
+               font-size: 100%;
+               color: #000000;
+               background-color: #D1D3D4;
+               z-index: 105;
+	       font-family: "arial Narrow"
+             }
