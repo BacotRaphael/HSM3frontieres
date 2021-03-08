@@ -1,7 +1,6 @@
 
-aggregation<-function(db,survey,choices,champs_synthese,groupGeo,recode_sl,label){
+aggregation<-function(db,survey,choices,choiceslabel,surveylabel,champs_synthese,groupGeo,recode_sl,label){
   
-  multiple_choices<-filter(survey, str_detect(type, "(\\bselect_multiple\\b)"))$name
 db[["info_localite_final"]]<-latin_to_utf8(db[["info_localite_final"]])
 db[["info_localite_final"]] <- clean(db[["info_localite_final"]])
 
@@ -53,15 +52,15 @@ settlement<- settlement_all %>%
   left_join(settlement_small,by=groupGeo) %>% 
   left_join(db %>% count(!!! rlang::syms(groupGeo),name = "B_ki_coverage"),by = groupGeo)
 
-settlement<-bind_rows(template_data,settlement) %>%prepdata()
+settlement<-bind_rows(template_data,settlement) %>%prepdata(.,T)
 
 
-parent_created <- re_create_sm(settlement, multiple_choices, separator = ".")
-parent_created_sl<-sl_correction(parent_created,recode_sl,multiple_choices)
+parent_created <- re_create_sm(settlement, survey, separator = ".")
+parent_created_sl<-sl_correction(parent_created,recode_sl,survey)
 parent_created_sl<-parent_created_sl %>% select(B_ki_coverage,everything())
 
 if(label=="oui") {
-  parent_created_sl<-from_xml_tolabel(parent_created_sl,choices,survey,multiple_choices)}
+  parent_created_sl<-from_xml_tolabel(parent_created_sl,choices,survey,choiceslabel,surveylabel)}
 
 return(parent_created_sl)
 }

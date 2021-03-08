@@ -63,14 +63,14 @@ sl_correction<-function(db,sl_definition,survey,sl_name="name",sl_condition="con
   return(db)
 }
 
-from_xml_tolabel<-function(db,choices,survey){
+from_xml_tolabel<-function(db,choices,survey,choices_label,survey_label){
   multiple_choices <- filter(survey, str_detect(type, "(\\bselect_multiple\\b)"))$name
   chr_names<-db %>% select_if(~ !(all(is.na(.x)))) %>% select_if(~ is.character(.)) %>% names
   chr_names<-chr_names[!str_detect(chr_names,paste(paste0(multiple_choices,"."),collapse = "|"))]
-  names(choices)<-gsub(":.*","",names(choices))
-  names(survey)<-gsub(":.*","",names(survey))
-  choice_labels <- choices[["label"]]
-  survey_labels <- survey[["label"]]
+  # names(choices)<-gsub(":.*","",names(choices))
+  # names(survey)<-gsub(":.*","",names(survey))
+  choice_labels <- choices[[choices_label]]
+  survey_labels <- survey[[survey_label]]
   
   for (i in 1: length(chr_names)){
     if(chr_names[i]%in%multiple_choices){
@@ -90,16 +90,16 @@ from_xml_tolabel<-function(db,choices,survey){
   return(db)
 }
 
-from_label_toxml<-function(db,choices,survey){
-  names(choices)<-gsub(":.*","",names(choices))
-  names(survey)<-gsub(":.*","",names(survey))
-  multiple_choices <- filter(survey, str_detect(type, "(\\bselect_multiple\\b)"))$label
+from_label_toxml<-function(db,choices,survey,choices_label,survey_label){
+  # names(choices)<-gsub(":.*","",names(choices))
+  # names(survey)<-gsub(":.*","",names(survey))
+  multiple_choices <- filter(survey, str_detect(type, "(\\bselect_multiple\\b)"))[[survey_label]]
   chr_names<-db %>% select_if(~ !(all(is.na(.x)))) %>% select_if(~ is.character(.)) %>% names
   choice_xml <- choices[["name"]]
   survey_xml <- survey[["name"]]
   for (i in 1:length(chr_names)){
     if(chr_names[i]%!in%multiple_choices){
-      var_xml <- match(db[[chr_names[i]]], choices[["label"]])
+      var_xml <- match(db[[chr_names[i]]], choices[[choices_label]])
       db[[chr_names[i]]]<-ifelse(is.na(var_xml),db[[chr_names[i]]],choice_xml[var_xml])
     }
   }
@@ -107,12 +107,12 @@ from_label_toxml<-function(db,choices,survey){
     if(names(db)[i]%in%(multiple_choices)){
       choices_sm<-names(db)[grepl(paste0(names(db)[i],"."),names(db),fixed = T)]
       split_sm<-str_split(choices_sm,"[.]",n = 2)
-      names(db)[which(names(db)%in%choices_sm)]<-lapply(split_sm, function(x)match(x, choices[["label"]])) %>% 
+      names(db)[which(names(db)%in%choices_sm)]<-lapply(split_sm, function(x)match(x, choices[[choices_label]])) %>% 
         lapply(.,function(x){ifelse(is.na(x),x,choice_xml[x])}) %>% lapply(., function(x)paste(x,collapse = ".")) %>% unlist %>%
-      sub("NA",survey_xml[match(names(db)[i], survey[["label"]])],.)
-      names(db)[i]<-survey_xml[match(names(db)[i], survey[["label"]])]
+      sub("NA",survey_xml[match(names(db)[i], survey[[survey_label]])],.)
+      names(db)[i]<-survey_xml[match(names(db)[i], survey[[survey_label]])]
     } else{
-      var_label <- match(names(db)[i], survey[["label"]])
+      var_label <- match(names(db)[i], survey[[survey_label]])
       names(db)[i]<-ifelse(is.na(var_label),names(db)[i],survey_xml[var_label])
     }
   }

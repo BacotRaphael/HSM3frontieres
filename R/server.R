@@ -10,14 +10,17 @@ server <- function(input, output, session) {
   library(shinyjs)
   library(rlang)
   library(writexl)
+  library(openxlsx)
   shinyjs::disable("dwclog")
   shinyjs::disable("dwclean")
   shinyjs::disable("dwagg")
   shinyjs::disable("dwconv")
+  # shinyjs::disable("dwdm")
   shinyjs::disable("runchecks")
   shinyjs::disable("runclean")
   shinyjs::disable("runagg")
   shinyjs::disable("runconv")
+  # shinyjs::disable("rundm")
   output$ui.db<-renderUI({
     if(input$operation%!in%c(NULL,"")){
       shiny::fileInput("data", "DATASET/ DONNEES (.csv or .xlsx)", accept = c(".csv",".xlsx",".xls"))
@@ -27,6 +30,16 @@ server <- function(input, output, session) {
     if(input$operation%!in%c(NULL,"")){
       shiny::fileInput("questionnaire", "Questionnaire EXCEL workbook", accept = c(".xlsx",".xls"))
     }
+  })
+  output$ui.choiceslabel<-renderUI({
+    req(input$questionnaire)
+    selectInput("choiceslabel","Colonne label pour la tab choices", choices = names(choices()))
+    
+  })
+  output$ui.surveylabel<-renderUI({
+    req(input$questionnaire)
+    selectInput("surveylabel","Colonne label pour la tab survey", choices = names(survey()))
+    
   })
   output$ui.clog<-renderUI({
     if(input$operation=="clean"){
@@ -57,7 +70,7 @@ server <- function(input, output, session) {
 
   })
   output$ui.pays<-renderUI({
-    if(input$operation=="clog"){
+    if(input$operation%in%c("clog","dm")){
       shiny::selectizeInput(
         'pays', "Pays", choices = setNames(c("niger","burkina_faso","mali"),c("Niger","Burkina Faso","Mali")),
         options = list(
@@ -134,12 +147,18 @@ server <- function(input, output, session) {
     statequestionnaire<-input$questionnaire
     if(stateoperation%in%c("label_toxml","xml_tolabel")&!is.null(statedata)&!is.null(statequestionnaire)){enable("runconv")} else{disable("runconv")}
   })
+  # observe({
+  #   stateoperation<-input$operation
+  #   statedata<-input$data
+  #   statequestionnaire<-input$questionnaire
+  #   if(stateoperation=="dm"&!is.null(statedata)&!is.null(statequestionnaire)){enable("rundm")} else{disable("rundm")}
+  # })
   check<-reactive({
     time_check<-survey_tonext_check(filter(db(),info_pays==input$pays))
     autre_check<-other_check(filter(db(),info_pays==input$pays),survey())
     logbook<-apply_checks(filter(db(),info_pays==input$pays),input$pays)
     clog<-bind_rows(logbook,autre_check,time_check)
-    if(input$cloglabel=="oui"){clog<-label_clog(clog,survey(),choices())}
+    if(input$cloglabel=="oui"){clog<-label_clog(clog,survey(),choices(),input$surveylabel,input$choiceslabel)}
     shinyjs::enable("dwclog")
     if(input$cloglabel=="oui"){
       shinyjs::html("dwclog", "Download labeled Cleaning LOG")
@@ -165,8 +184,20 @@ server <- function(input, output, session) {
     x<-clean()
     forout_clean$x=x
   })
+  # dm<-reactive({
+  #   db<- makedm(filter(db(),info_pays==input$pays),survey(),choices(),input$choiceslabel,input$pays)
+  #   shinyjs::enable("dwdm")
+  #   shinyjs::html("dwdm", "Download DATAmerge")
+  #   db
+  #   
+  # })
+  # forout_dm <- reactiveValues()
+  # observeEvent(input$rundm, {
+  #   x<-dm()
+  #   forout_dm$x=x
+  # })
   agg<-reactive({
-    db<- aggregation(db(),survey(),choices(),synthese(),input$admins,slrecode(),input$agglabel)
+    db<- aggregation(db(),survey(),choices(),input$choiceslabel,input$surveylabel,synthese(),input$admins,slrecode(),input$agglabel)
     shinyjs::enable("dwagg")
     shinyjs::html("dwagg", "Download Aggregated DATA")
     db
@@ -179,14 +210,13 @@ server <- function(input, output, session) {
   })
   conv<-reactive({
     if(input$operation=="xml_tolabel"){
-      db<-from_xml_tolabel(db(),choices(),survey())
+      db<-from_xml_tolabel(db(),choices(),survey(),input$choiceslabel,input$surveylabel)
     } else {
-      db<-from_label_toxml(db(),choices(),survey()) %>% sm_label_toxml(.,survey())
+      db<-from_label_toxml(db(),choices(),survey(),input$choiceslabel,input$surveylabel) %>% sm_label_toxml(.,survey())
     }
     shinyjs::enable("dwconv")
     shinyjs::html("dwconv", "Download Converted DATA")
     db
-    
   })
   forout_conv <- reactiveValues()
   observeEvent(input$runconv, {
@@ -201,7 +231,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_clog$x
-      write.csv(xout, file, row.names = FALSE)
+      write_excel_csv2(xout, file,delim = ",")
     }
   )
   output$dwclean <- shiny::downloadHandler(
@@ -210,7 +240,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_clean$x
-      write.csv(xout, file, row.names = FALSE)
+      write_excel_csv2(xout, file,delim = ",")
     }
   )
   output$dwagg <- shiny::downloadHandler(
@@ -219,16 +249,25 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_agg$x
-        write.csv(xout, file, row.names = FALSE)
+      readr::write_excel_csv2(xout, file,delim = ",")
     }
   )
   output$dwconv <- shiny::downloadHandler(
     filename = function() {
-      paste0("Converted_data-",humanTime(),".xlsx")
+      paste0("Converted_data-",humanTime(),".csv")
     },
     content = function(file) {
       xout<-forout_conv$x
-      write_xlsx(xout, file)
+      readr::write_excel_csv2(xout, file,delim = ",")
     }
   )
+  # output$dwdm<- shiny::downloadHandler(
+  #   filename = function() {
+  #     paste0("datamerge-",humanTime(),".csv")
+  #   },
+  #   content = function(file) {
+  #     xout<-forout_dm$x
+  #     readr::write_excel_csv2(xout, file,delim = ",")
+  #   }
+  # )
 }

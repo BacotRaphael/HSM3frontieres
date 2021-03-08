@@ -32,12 +32,12 @@ prepdata<-function(data,slashtodot){data %>% cleanheaders(.,slashtodot) %>% rec_
 ch<-as.character
 chr<-as.character
 
-label_clog<- function(clog,survey,choices){
+label_clog<- function(clog,survey,choices,survey_label,choices_label){
   
-  names(choices)<-gsub(":.*","",names(choices))
-  names(survey)<-gsub(":.*","",names(survey))
-  choices_label <- choices[["label"]]
-  survey_label <- survey[["label"]]
+  # names(choices)<-gsub(":.*","",names(choices))
+  # names(survey)<-gsub(":.*","",names(survey))
+  choices_label <- choices[[choices_label]]
+  survey_label <- survey[[survey_label]]
   question.name_label <- match(clog[["question.name"]], survey[["name"]])
   old.value_label <- match(clog[["old.value"]], choices[["name"]])
   parent.other.question_label <- match(clog[["parent.other.question"]], survey[["name"]])
