@@ -1,6 +1,6 @@
 ui <- shiny::fluidPage(
-  tags$head(
-    includeCSS("www/style.css")
+  shiny::tags$head(
+    shiny::includeCSS("www/style.css")
   ),
   shinyjs::useShinyjs(),
   shiny::titlePanel("REG_1903B 3 Frontieres (Burkina Faso / Mali / Niger)"),
@@ -42,8 +42,8 @@ ui <- shiny::fluidPage(
     )
     ,
     shiny::mainPanel(
-      conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                       tags$div("Loading...",id="loadmessage")),
+      shiny::conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                       shiny::tags$div("Loading...",id="loadmessage")),
       br(),
       p("Bienvenu dans l’application web shiny 3 frontières. Cette application web a été conçue pour automatiser les processus de vérification des données brutes, le nettoyage et l’agrégation des données REG_1903B 3 frontières."), 
       p("Cette application est destinée pour tout public, pas besoin d’avoir des connaissances en R ou autre langage de programmation pour manipuler l’application."),
@@ -57,7 +57,7 @@ ui <- shiny::fluidPage(
       p("Quand l’utilisateur choisit cette option dans la liste déroulante", strong("Quelle type d'opération voulez-vous effectuer"), "plusieurs champs s’afficheront."),
       p(strong("Pays")," : liste de 3 options (Niger/Burkina Faso/Mali)"),
       p("Comme la vérification peut différer d’une mission à l’autre, il faut bien choisir le pays pour lequel on collecte les données. Le script va filtrer les données et prendre en compte seulement le pays sélectionné."),
-      p("C’est possible d’avoir un cleaning log avec des champs labélisés (questions et réponses) en choisissant l’option",strong("Oui"), "dans", strong("Voulez vous labeliser les questions/réponses dans le cleaning log")),
+      p("C’est possible d’avoir un cleaning log avec des champs labélisés (questions et réponses) en choisissant l’option",strong("Oui"), "dans", strong("Voulez-vous labeliser les questions/réponses dans le cleaning log ?")),
       p(strong("dataset/ donnees (.csv or .xlsx) :")),
       p("L’utilisateur peut charger un fichier en format .csv ou bien .xlsx/.xls.",code("Le format des données est très important pour pouvoir utiliser cette application.")),
       p(strong("Le format pour les valeurs et les en-têtes doivent être en XML, pas de groupes dans les en-têtes et avec un point (.) comme séparateur de groupe. ")),
@@ -65,7 +65,7 @@ ui <- shiny::fluidPage(
       p(strong("Sélectionner l’option valeurs et en-tête XML dans le champ Format pour les valeurs et l'en-tête")),
       p(strong("Ne pas cocher la case  Inclure les groupes dans les en-têtes")),
       p(strong("Mettre un point (.) dans le champ Séparateur de groupe")),
-      p("En général, une base de donnée doit avoir une variable clé unique (« uuid »), en conforme avec l’outil de collecte de données et ne doit pas avoir de variable dupliquée. Si on rajoute des variables/options on doit aussi modifier le questionnaire KOBO."),
+      p("En générale, une base de donnée doit avoir une variable clé unique (« uuid »), en conforme avec l’outil de collecte de données et ne doit pas avoir de variable dupliquée. Si on rajoute des variables/options on doit aussi modifier le questionnaire KOBO."),
       p(strong("Questionnaire EXCEL workbook :")),
       p("L’utilisateur doit charger le questionnaire KOBO, avec au moins une feuille",strong("« survey »"), "et une feuille", strong("« choices »."), "Les questions de type", strong("text «autre»"), "doivent être placées directement après leurs questions parents", strong("(select_one/select_multiple)")),
       p("Une fois l’utilisateur fournit ces inputs, le bouton",strong("RUN checks"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton",strong("Download Cleaning LOG")," sera à son tour activé pour télécharger le cleaning LOG."),
@@ -75,7 +75,7 @@ ui <- shiny::fluidPage(
       p(strong("Questionnaire EXCEL workbook :")),
       p("Se référer à la section précédente"),
       p(strong("Cleaning LOG (.csv or .xlsx)")),
-      p("L’utilisateur peut charger le cleaning log soit en .csv soit en .xlsx/.xls. Le cleaning log généré dans l’étape précédente aura les colonnes suivantes: "),
+      p("L’utilisateur peut charger le cleaning log soit en .csv soit en .xlsx/.xls. Le cleaning log généré dans l’étape précédente aura les colonnes suivantes :"),
       p(code("today, base, enumerator, uuid, question.name, old.value, new.value, parent.other.question, parent.other.answer, other.text.var, problem, checkid, action")),
       p("Les colonnes les plus importantes sont les suivantes : "),
       p(code("question.name, old.value, new.value, parent.other.question, parent.other.answer, action")),
@@ -84,7 +84,7 @@ ui <- shiny::fluidPage(
       p(strong("new.value")," : nouvelle valeur"),
       p(strong("parent.other.question"), " : comme le cleaning log liste toutes les réponses texte, cette colonne aura le nom de la question mère"),
       p(strong("parent.other.answer")," : comme le cleaning log liste toutes les réponses texte, cette colonne aura les réponses de la question mère"),
-      p(strong("action"), " : ici on spécifie le type d’action a effectué pour le nettoyage. Les différentes actions sont:"),
+      p(strong("action"), " : ici on spécifie le type d’action a effectuer pour le nettoyage. Les différentes actions sont:"),
       p(span("remove",style ="color:#EE5859"), " : l’enquête sera supprimée"),
       p(span("change",style ="color:#EE5859"), " : l’ancienne valeur (old.value) sera remplacée par la nouvelle valeur (new.value) pour la question qui se trouve dans (question.name)"),
       p(span("recode",style ="color:#EE5859"), " : l’ancienne valeur (parent.other.answer) sera remplacée par la nouvelle valeur (new.value) pour la question qui se trouve dans (parent.other.question)"),
@@ -98,17 +98,17 @@ ui <- shiny::fluidPage(
       p("Se référer à la section précédente"),
       p(strong("Champs synthese (.csv or .xlsx)")," : charger le fichier qui associe les variables des données avec les fonctions d’agrégation. A mettre à jour si on décide d’ajouter des variables/des fonctions"),
       p(strong("Skip Logic list (.csv or .xlsx)")," : charger le fichier qui définit comment les « SL » doivent être implémentés. A mettre à jour si on modifie la colonne « relevant » du questionnaire"),
-      p("Apres l’utilisateur doit sélectionnez les variables d’agrégation dans l’ordre (admin0, admin1, admin2, admin3, admin4 …etc.). Le champs", strong("« Sélectionnez les variables d'agrégation dans l'ordre (admin) » apparaitra une fois que les données et le questionnaire sont chargés.")),
+      p("Apres l’utilisateur doit sélectionner les variables d’agrégation dans l’ordre (admin0, admin1, admin2, admin3, admin4 …etc.). Le champs", strong("« Sélectionnez les variables d'agrégation dans l'ordre (admin) » apparaitra une fois que les données et le questionnaire sont chargés.")),
       p("Vous avez le choix d’avoir les données agrégées en XML ou labellisées."),
-      p("Une fois l’utilisateur fournit ces inputs, le bouton", strong("AGGREGATION"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton", strong("Download Aggregated DATA"), "sera à son tour activé pour télécharger les données agrégées."),
+      p("Une fois l’utilisateur charge les fichiers données/questionnaire/champs synthese et skip logic, le bouton", strong("AGGREGATION"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton", strong("Download Aggregated DATA"), "sera à son tour activé pour télécharger les données agrégées."),
       h3(strong("Convertir XML en LABEL"),style ="color:#EE5859"),
       p("Comme le nom de l’opération l’indique, cette option convertit les données qui sont en format XML en données labéliser. Veuillez référer aux sections précédente pour connaître le bon format des fichiers a chargé."),
-      p(strong("RAPPEL format des données: XML valeurs et en-tête, point comme séparateur de groupe, ne pas inclure les groupes dans les en-têtes, pas de variables dupliquées. Si des colonnes/options ont été rajouté, modifiez l’outil de collecte de données.")),
+      p(strong("RAPPEL format des données: XML valeurs et en-tête, point comme séparateur de groupe, ne pas inclure les groupes dans les en-têtes, pas de variables dupliquées. Si des colonnes/options ont été rajoutées, modifiez l’outil de collecte de données.")),
       p("Une fois l’utilisateur fournit ces inputs, le bouton", strong("CONVERTIR"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton", strong("Download Converted DATA"), "sera à son tour activé pour télécharger les données convertis."),
       h3(strong("Convertir LABEL en XML"),style ="color:#EE5859"),
       p("Comme le nom de l’opération l’indique, cette option convertit les données labélisées en format XML."),
-      p(strong("RAPPEL format des données: Point comme séparateur de groupe et non pas la barre oblique « / », ne pas inclure les groupes dans les en-têtes, pas de variables dupliquées. Si des colonnes/options ont été rajoutées, modifiez l’outil de collecte de données. Kobotoolbox ne te permet pas de charger un questionnaire XLSform si la colonne « name » n’est pas unique ce qui n’est pas le cas pour la colonne « label ». Faites bien attention, pas des en-têtes qui portent les mêmes labels. Si vous changez des colonnes/options, modifiez aussi le questionnaire.")),
-      p("Une fois l’utilisateur fournit ces inputs, le bouton", strong("CONVERTIR"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton", strong("Download Converted DATA"), "sera à son tour activé pour télécharger les données convertis."),
+      p(strong("RAPPEL format des données: Point comme séparateur de groupe et non pas la barre oblique « / », ne pas inclure les groupes dans les en-têtes, pas de variables dupliquées. Si des colonnes/options ont été rajoutées, modifiez l’outil de collecte de données. Kobotoolbox ne te permet pas de charger un questionnaire XLSform si la colonne « name » n’est pas unique ce qui n’est pas le cas pour la colonne « label ». Faites bien attention, pas d'en-têtes qui portent les mêmes labels. Si vous changez des colonnes/options, modifiez aussi le questionnaire.")),
+      p("Une fois l’utilisateur charge les données et le questionnaire, le bouton", strong("CONVERTIR"), "sera activé et l’utilisateur peut lancer l’opération. Une fois les calculs terminés, le bouton", strong("Download Converted DATA"), "sera à son tour activé pour télécharger les données convertis."),
       br()
     )
   )

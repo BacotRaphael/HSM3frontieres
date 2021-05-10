@@ -7,6 +7,7 @@ server <- function(input, output, session) {
   library(shiny)
   library(composr)
   library(stringr)
+  library(stringi)
   library(shinyjs)
   library(rlang)
   library(writexl)
@@ -83,7 +84,7 @@ server <- function(input, output, session) {
   output$ui.cloglabel<-renderUI({
     if(input$operation=="clog"){
       shiny::selectizeInput(
-        'cloglabel', "Voulez vous labeliser les questions/reponses dans le cleaning log", choices = setNames(c("non","oui"),c("Non","Oui")),
+        'cloglabel', "Voulez vous labeliser les questions/reponses dans le cleaning log?", choices = setNames(c("non","oui"),c("Non","Oui")),
         options = list(
           placeholder = 'Veuillez choisir une des options suivantes',
           onInitialize = I('function() { this.setValue(""); }')
@@ -231,7 +232,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_clog$x
-      write_excel_csv2(xout, file,delim = ",")
+      write_excel_csv2(xout, file)
     }
   )
   output$dwclean <- shiny::downloadHandler(
@@ -240,7 +241,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_clean$x
-      write_excel_csv2(xout, file,delim = ",")
+      write_csv2(xout, file)
     }
   )
   output$dwagg <- shiny::downloadHandler(
@@ -249,7 +250,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_agg$x
-      readr::write_excel_csv2(xout, file,delim = ",")
+      write_excel_csv2(xout, file)
     }
   )
   output$dwconv <- shiny::downloadHandler(
@@ -258,7 +259,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       xout<-forout_conv$x
-      readr::write_excel_csv2(xout, file,delim = ",")
+      write_excel_csv2(xout, file)
     }
   )
   # output$dwdm<- shiny::downloadHandler(

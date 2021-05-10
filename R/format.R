@@ -53,9 +53,9 @@ sl_correction<-function(db,sl_definition,survey,sl_name="name",sl_condition="con
     if(qname%in%names(db)){
       db[[qname]]<-ifelse(eval(parse(text=sl_definition[[sl_condition]][[i]]),envir = db),db[[qname]],"SL")
       if(qname%in%multiple_choices){
-        sm<-names(db)[str_detect(names(db),paste0(qname,"."))]
+        sm<-names(db)[str_detect(names(db),paste0(qname,"[.]"))]
         for(j in 1:length(sm)){
-          db[[sm[j]]]<-ifelse(db[[qname]]=="SL","SL",db[[sm[j]]])
+          db[[sm[j]]]<-ifelse(db[[qname]]=="SL"&!is.na(db[[qname]]),"SL",db[[sm[j]]])
         }
       }
     }
@@ -117,4 +117,8 @@ from_label_toxml<-function(db,choices,survey,choices_label,survey_label){
     }
   }
   return(db)
+}
+
+clean_pcode<-function(x){
+  stri_trans_general(x, "Latin-ASCII") %>% tolower(.) %>% gsub("[^a-z0-9_]", "\\_", .) %>% gsub("^X_|^_|_$","",.) %>% gsub('([_])\\1+', '\\1',.)
 }

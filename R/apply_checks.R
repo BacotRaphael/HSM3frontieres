@@ -66,7 +66,7 @@ logbook<-makeslog(data,logbook,"id11",index,"abris_destruction_raison","S'agit-i
 
 temp<-data %>% group_by(deviceid) %>% summarise(n=n_distinct(global_enum_id)) %>% mutate(check=n>1)
 index<-pulluuid(data, data$deviceid%in% temp$deviceid[which(temp$check==T)])
-logbook<-makeslog(data,logbook,"id12",index,"global_enum_id","Meme identifiant de smartephone mais differents numeros d'enqueteurs")
+logbook<-makeslog(data,logbook,"id12",index,"global_enum_id","Meme identifiant de smartphone mais differents numeros d'enqueteurs")
 
 index<-pulluuid(data, data$ic_age>50&data$profession_ic=="etudiant")
 logbook<-makeslog(data,logbook,"id13",index,"ic_age","Un informateur cle qui a plus de 50 avec comme profil etudiant")
@@ -135,8 +135,13 @@ logbook<- makeslog(data,logbook,"id26",index,"assistance","L'IC a signale la pre
 index<-pulluuid(data,data$nourriture_maintenant=="oui"&data$nourriture_source=="ong")
 logbook<- makeslog(data,logbook,"id27",index,"nourriture_source","La source de nourriture est Aide humanitaire/aide alimentaire gouvernementale alors qu'il a dit que les gens ont suffisamment à manger")
 
-index<-pulluuid(data,data$sante_maintenant=="oui"&data$nutri=="non")
-logbook<- makeslog(data,logbook,"id28",index,"nutri","Présence de services de santé accessibles mais pas de Programmes nutritionnels mis en oeuvre")
+if(pays!="niger"){
+  index<-pulluuid(data,data$sante_maintenant=="oui"&data$nutri=="non")
+  logbook<- makeslog(data,logbook,"id28",index,"nutri","Présence de services de santé accessibles mais pas de Programmes nutritionnels mis en oeuvre")
+} else{
+  index<-pulluuid(data,data$sante_maintenant=="oui"&data$nutri=="non"&composr::sm_selected(data$services_sante_niger, any = c("csi_i","csi_ii","hd","chr","hr","chu")))
+  logbook<- makeslog(data,logbook,"id28",index,"nutri","Présence de services de santé accessibles mais pas de Programmes nutritionnels mis en oeuvre")
+}
 
 index<-pulluuid(data,data$distr_nourriture=="oui"&data$assistance=="non")
 logbook<- makeslog(data,logbook,"id29",index,"assistance","une partie de la population n'a pas reçu une assistance humanitaire ? alors que Au cours des 30 derniers jours, y a des personnes qui ont reçu une assistance alimentaire")
@@ -158,6 +163,23 @@ logbook<- makeslog(data,logbook,"id34",index,"prot_maintenant","ous aviez mentio
 
 index<-pulluuid(data,composr::sm_selected(data$revenu_source,any = c("dons_humanitaire"))&data$distr_nourriture=="non")
 logbook<- makeslog(data,logbook,"id35",index,"revenu_source","Source de revenu Dons humanitaires / de l'Etat alors qu'il n y a pas eu d'assistance humanitaire dans la localité")
+if(pays=="mali"){
+  
+  index<-pulluuid(data,composr::sm_selected(data$pas_nourriture_raison,any = c("pas_marche"))&data$marche_raison%in%c("pas_marche","pas_marche_distance_marche"))
+  logbook<- makeslog(data,logbook,"id36",index,"marche_raison","Incoherence entre existence et fonctionnement du marché")
+  
+  index<-pulluuid(data,composr::sm_selected(data$pas_nourriture_raison,any = c("pas_marche"))&data$marche_raison%in%c("marche_transport"))
+  logbook<- makeslog(data,logbook,"id37",index,"marche_raison","Incoherence entre existence et distanciation du marché")
+  
+  index<-pulluuid(data,composr::sm_selected(data$pas_nourriture_raison,any = c("insecurite_acces_terre"))&data$moyens_existence_obstacle=="oui")
+  logbook<- makeslog(data,logbook,"id38",index,"pas_nourriture_raison","L'insecutrite fais que la majorité n'a pas acces à suffisament de nourriture et les moyens d'existence sont accessibles")
+  
+  index<-pulluuid(data,composr::sm_selected(data$pas_nourriture_raison,any = c("pas_de_terre"))&composr::sm_selected(data$activites_actuelles_non,any = c("agri_vente")))
+  logbook<- makeslog(data,logbook,"id39",index,"pas_nourriture_raison","La majorite de la population n'a pas acces à suffisament de nourriture et elle cultive pour vendre")
+  
+  index<-pulluuid(data,data$eau_protection=="oui"&data$prot_maintenant=="oui")
+  logbook<- makeslog(data,logbook,"id40",index,"eau_protection","La majorité de la population se sente en securite alors des gens n'ont pas pu acceder à leurs point d'eau de preference pour cause d'insecurité")
+  }
 
 return(logbook)
 }

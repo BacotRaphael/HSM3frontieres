@@ -337,7 +337,8 @@ settlement_agg<-function(db,by,champs,fct){
   if(length(champs)>0){
     db %>%
       group_by_at(by) %>%
-      summarize_at(all_of(champs), ~fct(.))
+      summarize_at(all_of(champs), ~fct(.)) %>%
+      ungroup()
   } else{db[!duplicated(db[,by]),][,by]}
 }
 

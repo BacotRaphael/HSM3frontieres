@@ -41,14 +41,30 @@ label_clog<- function(clog,survey,choices,survey_label,choices_label){
   question.name_label <- match(clog[["question.name"]], survey[["name"]])
   old.value_label <- match(clog[["old.value"]], choices[["name"]])
   parent.other.question_label <- match(clog[["parent.other.question"]], survey[["name"]])
+  parent.other.answer_label<-match(clog[["parent.other.answer"]], choices[["name"]])
+  
+  old.value_label<-str_split(clog[["old.value"]]," ")
+  old.value_label<-lapply(old.value_label, function(x)match(x, choices[["name"]])) %>% 
+    lapply(.,function(x){ifelse(is.na(x),x,choices_label[x])}) %>% lapply(., function(x)paste(x,collapse = " ")) %>% unlist
+  
+  parent.other.answer_label<-str_split(clog[["parent.other.answer"]]," ")
+  parent.other.answer_label<-lapply(parent.other.answer_label, function(x)match(x, choices[["name"]])) %>% 
+    lapply(.,function(x){ifelse(is.na(x),x,choices_label[x])}) %>% lapply(., function(x)paste(x,collapse = " ")) %>% unlist
   
   labeled_clog <- clog %>%
     mutate(question.name_label = ifelse(is.na(question.name_label),question.name,survey_label[question.name_label]),
-           old.value_label = ifelse(is.na(old.value_label),old.value,choices_label[old.value_label]),
-           parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label])
-           )
+           old.value_label =ifelse(is.na(old.value_label)|old.value_label=="NA",old.value,old.value_label),
+           parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label]),
+           parent.other.answer_label =ifelse(is.na(parent.other.answer_label)|parent.other.answer_label=="NA",parent.other.answer,parent.other.answer_label)
+    )
   
-  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","parent.other.question","parent.other.question_label","parent.other.answer")
+  # labeled_clog <- clog %>%
+  #   mutate(question.name_label = ifelse(is.na(question.name_label),question.name,survey_label[question.name_label]),
+  #          old.value_label = ifelse(is.na(old.value_label),old.value,choices_label[old.value_label]),
+  #          parent.other.question_label = ifelse(is.na(parent.other.question_label),parent.other.question,survey_label[parent.other.question_label])
+  #          )
+  
+  vars<-c("today","base","enumerator","uuid","question.name","question.name_label","old.value","old.value_label","new.value","parent.other.question","parent.other.question_label","parent.other.answer","parent.other.answer_label")
   labeled_clog<-labeled_clog %>% select(all_of(vars),everything())
   
   return(labeled_clog)
@@ -66,21 +82,21 @@ load_file <- function(name, path) {
 
 pulluuid<-function(data,logiquetest){data$uuid[which(logiquetest)]}
 
-clean <- function(x) {
-  x <- tolower(x)
-  x <- gsub("  "," ",x)
-  x <- gsub("  "," ",x)
-  #supprime l'espace en debut
-  Nettoyage <- x[substr(x, 0, 1)==" "]
-  x <- replace(x,substr(x, 0, 1)==" ",substr(Nettoyage, 2, nchar(Nettoyage)))
-  #supprime l'espace en fin
-  Nettoyage <- x[substr(x, nchar(x), nchar(x)+1)==" "]
-  x <- replace(x,substr(x, nchar(x), nchar(x)+1)==" ", substr(Nettoyage, 1, nchar(Nettoyage)-1))
-  # x <- gsub("?|?|?","a",x)
-  # x <- gsub("?|?|?|?","e",x)
-  # x <- gsub("?|?","i",x)
-  # x <- gsub("?|?","o",x)
-  # x <- gsub("?|?|?","u",x)
-  # x <- gsub(" |-|'","_",x)
-  return (x)
-}
+# clean <- function(x) {
+#   x <- tolower(x)
+#   x <- gsub("  "," ",x)
+#   x <- gsub("  "," ",x)
+#   #supprime l'espace en debut
+#   Nettoyage <- x[substr(x, 0, 1)==" "]
+#   x <- replace(x,substr(x, 0, 1)==" ",substr(Nettoyage, 2, nchar(Nettoyage)))
+#   #supprime l'espace en fin
+#   Nettoyage <- x[substr(x, nchar(x), nchar(x)+1)==" "]
+#   x <- replace(x,substr(x, nchar(x), nchar(x)+1)==" ", substr(Nettoyage, 1, nchar(Nettoyage)-1))
+#   # x <- gsub("?|?|?","a",x)
+#   # x <- gsub("?|?|?|?","e",x)
+#   # x <- gsub("?|?","i",x)
+#   # x <- gsub("?|?","o",x)
+#   # x <- gsub("?|?|?","u",x)
+#   # x <- gsub(" |-|'","_",x)
+#   return (x)
+# }

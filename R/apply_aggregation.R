@@ -1,9 +1,10 @@
 
 aggregation<-function(db,survey,choices,choiceslabel,surveylabel,champs_synthese,groupGeo,recode_sl,label){
   
-db[["info_localite_final"]]<-latin_to_utf8(db[["info_localite_final"]])
-db[["info_localite_final"]] <- clean(db[["info_localite_final"]])
-
+# db[["info_localite_final"]]<-latin_to_utf8(db[["info_localite_final"]])
+# db[["info_localite_final"]] <- clean(db[["info_localite_final"]])
+  db[,groupGeo]<- purrr::map_df(db[,groupGeo],clean_pcode)
+  
 template_data <- db[0,]
 template_data<-data.frame(lapply(template_data, as.character), stringsAsFactors=FALSE)
 
@@ -57,7 +58,8 @@ settlement<-bind_rows(template_data,settlement) %>%prepdata(.,T)
 
 parent_created <- re_create_sm(settlement, survey, separator = ".")
 parent_created_sl<-sl_correction(parent_created,recode_sl,survey)
-parent_created_sl<-parent_created_sl %>% select(B_ki_coverage,everything())
+parent_created_sl$dep_com_loc<-paste(parent_created_sl$admin2,parent_created_sl$admin3,parent_created_sl$info_localite_final,sep = "_")
+parent_created_sl<-parent_created_sl %>% select(B_ki_coverage,dep_com_loc,everything())
 
 if(label=="oui") {
   parent_created_sl<-from_xml_tolabel(parent_created_sl,choices,survey,choiceslabel,surveylabel)}
